@@ -1,129 +1,265 @@
-<!DOCTYPE html>
-<html lang="id">
+<!doctype html>
+<html lang="id" class="h-full">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Masuk — NOVA Schedule</title>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
-    :root {
-      --bg:#05060F; --surface:rgba(255,255,255,.045); --border:rgba(255,255,255,.10);
-      --text:#F4F6FF; --muted:#A7AECB; --cyan:#00E5FF; --purple:#A855F7; --red:#FB7185; --emerald:#34D399;
-    }
-    * { box-sizing:border-box; }
-    body {
-      margin:0; min-height:100vh; display:grid; place-items:center; padding:24px 16px;
-      background:
-        radial-gradient(900px 520px at 12% -10%, rgba(168,85,247,.28), transparent 60%),
-        radial-gradient(820px 520px at 88% 4%, rgba(0,229,255,.20), transparent 58%),
-        radial-gradient(700px 500px at 50% 115%, rgba(244,114,182,.12), transparent 60%),
-        var(--bg);
-      color:var(--text); font-family:'Manrope',system-ui,sans-serif;
-    }
-    h1,h2 { font-family:'Space Grotesk',system-ui,sans-serif; letter-spacing:-.02em; margin:0; }
-    .wrap { width:100%; max-width:440px; }
-    .logo {
-      width:68px; height:68px; margin:0 auto; border-radius:20px; display:grid; place-items:center;
-      font-weight:800; font-size:30px; color:#04060F;
-      background:linear-gradient(135deg,#00E5FF,#A855F7);
-      box-shadow:0 0 40px rgba(0,229,255,.38), 0 0 70px rgba(168,85,247,.25);
-    }
-    .glass {
-      margin-top:24px; background:var(--surface); border:1px solid var(--border);
-      backdrop-filter:blur(18px); border-radius:20px; padding:28px 24px;
-      box-shadow:0 18px 50px rgba(0,0,0,.35);
-    }
-    label { display:block; font-size:12px; font-weight:700; color:var(--muted); margin-bottom:6px; }
-    .field {
-      width:100%; background:rgba(3,4,12,.6); border:1px solid rgba(255,255,255,.12);
-      border-radius:12px; padding:12px 14px; color:var(--text); font:inherit; outline:none; transition:.2s;
-    }
-    .field:focus { border-color:var(--cyan); box-shadow:0 0 0 3px rgba(0,229,255,.14); }
-    .btn-primary {
-      width:100%; margin-top:18px; border:0; border-radius:12px; padding:13px 16px;
-      font-weight:800; font-size:15px; color:#04060F; cursor:pointer;
-      background:linear-gradient(90deg,#00E5FF,#A855F7);
-      box-shadow:0 12px 30px rgba(0,229,255,.22), 0 12px 30px rgba(168,85,247,.22);
-    }
-    .btn-primary:disabled { opacity:.6; cursor:not-allowed; }
-    .msg-err { margin-top:12px; font-size:13px; font-weight:700; color:var(--red); }
-    .msg-ok { margin-top:12px; font-size:13px; font-weight:700; color:var(--emerald); }
-    .footer-link { margin-top:18px; text-align:center; font-size:13px; color:var(--muted); }
-    .footer-link a { color:var(--cyan); font-weight:700; text-decoration:none; }
-    .footer-link a:hover { text-decoration:underline; }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NOVA Schedule — Masuk</title>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-  <div class="wrap">
-    <div style="text-align:center;">
-      <div class="logo">N</div>
-      <h1 style="margin-top:18px; font-size:32px;">NOVA <span style="color:var(--cyan);">Schedule</span></h1>
-      <p style="margin:6px 0 0; font-size:14px; color:var(--muted);">Ruangmu untuk mengatur hari dengan tenang.</p>
+<body class="min-h-full bg-slate-950 text-slate-100 flex items-center justify-center p-4">
+  <div class="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900/90 p-6 sm:p-8 shadow-2xl">
+    <!-- Header -->
+    <div class="mb-6 text-center">
+      <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-500/20 text-indigo-400 font-bold text-xl border border-indigo-500/30">
+        N
+      </div>
+      <h1 class="text-2xl font-bold tracking-tight">NOVA Schedule</h1>
+      <p id="auth-subtitle" class="mt-1 text-sm text-slate-400">
+        Masuk untuk menyinkronkan jadwal pribadimu ke cloud.
+      </p>
     </div>
 
-    <section class="glass" aria-label="Masuk ke NOVA Schedule">
-      <h2 style="font-size:22px; text-align:center;">Selamat Datang Kembali</h2>
-      <p style="text-align:center; font-size:13px; color:var(--muted); margin:6px 0 20px;">
-        Masuk menggunakan username atau email terdaftar tanpa password.
-      </p>
+    <!-- Alert / Pesan Error atau Info -->
+    <div id="auth-alert" class="hidden mb-4 rounded-xl border px-3.5 py-2.5 text-xs leading-relaxed"></div>
 
-      <form id="loginForm" novalidate>
-        <div>
-          <label for="loginId">Username atau Email</label>
-          <input id="loginId" name="identifier" type="text" class="field" placeholder="Contoh: daffa@email.com atau daffa01" required />
-        </div>
+    <!-- Tombol Login Google -->
+    <button
+      id="btn-google"
+      type="button"
+      class="w-full flex items-center justify-center gap-2.5 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-750 active:scale-[0.99] px-4 py-2.5 text-sm font-medium text-white transition cursor-pointer"
+    >
+      <svg class="h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
+        <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.7l3.1-3.1C17.3 1.8 14.8 1 12 1 7.4 1 3.5 3.6 1.6 7.4l3.7 2.8C6.2 7.2 8.9 5 12 5z"/>
+        <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.7-2.4 3.6l3.7 2.9c2.2-2 3.7-5 3.7-8.7z"/>
+        <path fill="#FBBC05" d="M5.3 14.8c-.2-.7-.4-1.5-.4-2.3s.2-1.6.4-2.3L1.6 7.4C.6 9.4 0 11.6 0 12.5s.6 3.1 1.6 5.1l3.7-2.8z"/>
+        <path fill="#34A853" d="M12 24c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3.1 0-5.8-2.1-6.7-5l-3.7 2.8C3.5 20.4 7.4 24 12 24z"/>
+      </svg>
+      <span>Lanjutkan dengan Google</span>
+    </button>
 
-        <button id="loginBtn" type="submit" class="btn-primary">MASUK</button>
-        <p id="loginError" class="msg-err" role="alert" hidden></p>
-        <p id="loginSuccess" class="msg-ok" role="status" hidden></p>
-      </form>
+    <div class="my-5 flex items-center gap-3">
+      <div class="h-px flex-1 bg-slate-800"></div>
+      <span class="text-[11px] uppercase tracking-wider text-slate-500">atau email</span>
+      <div class="h-px flex-1 bg-slate-800"></div>
+    </div>
 
-      <div class="footer-link">
-        Belum punya akun? <a href="register.html">Daftar di sini</a>
+    <!-- Form Email & Password -->
+    <form id="email-auth-form" class="space-y-3.5">
+      <div>
+        <label for="email" class="block text-xs font-medium text-slate-300 mb-1">Email</label>
+        <input
+          id="email"
+          type="email"
+          required
+          autocomplete="email"
+          placeholder="nama@email.com"
+          class="w-full rounded-xl border border-slate-700 bg-slate-950/70 px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none"
+        />
       </div>
-    </section>
+
+      <div id="password-group">
+        <div class="flex items-center justify-between mb-1">
+          <label for="password" class="block text-xs font-medium text-slate-300">Password</label>
+          <button
+            id="btn-forgot"
+            type="button"
+            class="text-[11px] text-indigo-400 hover:text-indigo-300 cursor-pointer"
+          >
+            Lupa password?
+          </button>
+        </div>
+        <input
+          id="password"
+          type="password"
+          required
+          minlength="6"
+          autocomplete="current-password"
+          placeholder="Minimal 6 karakter"
+          class="w-full rounded-xl border border-slate-700 bg-slate-950/70 px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none"
+        />
+      </div>
+
+      <button
+        id="btn-submit-email"
+        type="submit"
+        class="w-full rounded-xl bg-indigo-600 hover:bg-indigo-500 active:scale-[0.99] px-4 py-2.5 text-sm font-semibold text-white transition cursor-pointer"
+      >
+        Masuk
+      </button>
+    </form>
+
+    <!-- Toggle Mode Login / Register / Reset -->
+    <div class="mt-5 text-center text-xs text-slate-400">
+      <span id="toggle-text">Belum punya akun?</span>
+      <button
+        id="btn-toggle-mode"
+        type="button"
+        class="ml-1 font-medium text-indigo-400 hover:text-indigo-300 cursor-pointer"
+      >
+        Daftar sekarang
+      </button>
+    </div>
   </div>
 
   <script type="module">
-    import { getActiveUser, loginUserWithoutPassword } from "./db-config.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+    import {
+      getAuth,
+      onAuthStateChanged,
+      GoogleAuthProvider,
+      signInWithPopup,
+      signInWithEmailAndPassword,
+      createUserWithEmailAndPassword,
+      sendPasswordResetEmail
+    } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
 
-    if (getActiveUser()) {
-      window.location.replace("main.html");
+    // GANTI dengan konfigurasi Firebase Web App milikmu
+    const firebaseConfig = {
+      apiKey: "GANTI_DENGAN_API_KEY",
+      authDomain: "GANTI_DENGAN_AUTH_DOMAIN",
+      projectId: "GANTI_DENGAN_PROJECT_ID",
+      storageBucket: "GANTI_DENGAN_STORAGE_BUCKET",
+      messagingSenderId: "GANTI_DENGAN_MESSAGING_SENDER_ID",
+      appId: "GANTI_DENGAN_APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const googleProvider = new GoogleAuthProvider();
+
+    // Mode: 'login' | 'register' | 'reset'
+    let mode = "login";
+    let isRedirecting = false;
+
+    const alertEl = document.getElementById("auth-alert");
+    const subtitleEl = document.getElementById("auth-subtitle");
+    const formEl = document.getElementById("email-auth-form");
+    const emailInput = document.getElementById("email");
+    const passwordInput = document.getElementById("password");
+    const passwordGroup = document.getElementById("password-group");
+    const btnSubmit = document.getElementById("btn-submit-email");
+    const btnGoogle = document.getElementById("btn-google");
+    const btnToggle = document.getElementById("btn-toggle-mode");
+    const btnForgot = document.getElementById("btn-forgot");
+    const toggleText = document.getElementById("toggle-text");
+
+    function showAlert(msg, type = "error") {
+      alertEl.textContent = msg;
+      alertEl.classList.remove("hidden", "border-red-500/40", "bg-red-500/10", "text-red-300", "border-emerald-500/40", "bg-emerald-500/10", "text-emerald-300");
+      if (type === "success") {
+        alertEl.classList.add("border-emerald-500/40", "bg-emerald-500/10", "text-emerald-300");
+      } else {
+        alertEl.classList.add("border-red-500/40", "bg-red-500/10", "text-red-300");
+      }
     }
 
-    const form = document.getElementById("loginForm");
-    const idInput = document.getElementById("loginId");
-    const btn = document.getElementById("loginBtn");
-    const errEl = document.getElementById("loginError");
-    const okEl = document.getElementById("loginSuccess");
+    function hideAlert() {
+      alertEl.classList.add("hidden");
+    }
 
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      errEl.hidden = true;
-      okEl.hidden = true;
-
-      const identifier = idInput.value.trim();
-      if (!identifier) {
-        errEl.textContent = "Masukkan username atau email terlebih dahulu.";
-        errEl.hidden = false;
-        idInput.focus();
-        return;
+    function setMode(nextMode) {
+      mode = nextMode;
+      hideAlert();
+      if (mode === "login") {
+        subtitleEl.textContent = "Masuk untuk menyinkronkan jadwal pribadimu ke cloud.";
+        passwordGroup.classList.remove("hidden");
+        passwordInput.required = true;
+        passwordInput.autocomplete = "current-password";
+        btnSubmit.textContent = "Masuk";
+        toggleText.textContent = "Belum punya akun?";
+        btnToggle.textContent = "Daftar sekarang";
+      } else if (mode === "register") {
+        subtitleEl.textContent = "Buat akun baru untuk menyimpan jadwal secara aman.";
+        passwordGroup.classList.remove("hidden");
+        passwordInput.required = true;
+        passwordInput.autocomplete = "new-password";
+        btnSubmit.textContent = "Daftar Akun";
+        toggleText.textContent = "Sudah punya akun?";
+        btnToggle.textContent = "Masuk di sini";
+      } else if (mode === "reset") {
+        subtitleEl.textContent = "Masukkan email untuk menerima tautan reset password.";
+        passwordGroup.classList.add("hidden");
+        passwordInput.required = false;
+        btnSubmit.textContent = "Kirim Link Reset";
+        toggleText.textContent = "Kembali ke";
+        btnToggle.textContent = "Halaman masuk";
       }
+    }
 
-      btn.disabled = true;
-      btn.textContent = "MEMERIKSA...";
+    function mapAuthError(err) {
+      const code = err?.code || "";
+      switch (code) {
+        case "auth/invalid-email":
+          return "Format email tidak valid.";
+        case "auth/user-not-found":
+        case "auth/wrong-password":
+        case "auth/invalid-credential":
+          return "Email atau password salah.";
+        case "auth/email-already-in-use":
+          return "Email ini sudah terdaftar. Silakan masuk atau gunakan reset password.";
+        case "auth/weak-password":
+          return "Password terlalu lemah (minimal 6 karakter).";
+        case "auth/popup-closed-by-user":
+          return "Jendela login Google ditutup sebelum selesai.";
+        case "auth/popup-blocked":
+          return "Popup diblokir browser. Izinkan popup untuk situs ini lalu coba lagi.";
+        case "auth/unauthorized-domain":
+          return "Domain ini belum terdaftar di Firebase Authorized Domains.";
+        case "auth/network-request-failed":
+          return "Koneksi jaringan bermasalah. Periksa internetmu.";
+        default:
+          return err?.message || "Terjadi kesalahan saat autentikasi.";
+      }
+    }
+
+    btnToggle.addEventListener("click", () => {
+      setMode(mode === "login" ? "register" : "login");
+    });
+
+    btnForgot.addEventListener("click", () => {
+      setMode("reset");
+    });
+
+    btnGoogle.addEventListener("click", async () => {
+      hideAlert();
+      btnGoogle.disabled = true;
       try {
-        const user = await loginUserWithoutPassword(identifier);
-        okEl.textContent = `Masuk sebagai ${user.name}. Mengalihkan...`;
-        okEl.hidden = false;
-        setTimeout(() => {
-          window.location.href = "main.html";
-        }, 500);
+        await signInWithPopup(auth, googleProvider);
+        // Redirect ditangani oleh onAuthStateChanged
       } catch (err) {
-        errEl.textContent = err?.message || "Gagal masuk ke Firebase.";
-        errEl.hidden = false;
-        btn.disabled = false;
-        btn.textContent = "MASUK";
+        showAlert(mapAuthError(err), "error");
+        btnGoogle.disabled = false;
+      }
+    });
+
+    formEl.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      hideAlert();
+      const email = emailInput.value.trim();
+      const password = passwordInput.value;
+
+      btnSubmit.disabled = true;
+      try {
+        if (mode === "login") {
+          await signInWithEmailAndPassword(auth, email, password);
+        } else if (mode === "register") {
+          await createUserWithEmailAndPassword(auth, email, password);
+        } else if (mode === "reset") {
+          await sendPasswordResetEmail(auth, email);
+          showAlert("Tautan reset password sudah dikirim ke emailmu (cek juga folder Spam).", "success");
+          btnSubmit.disabled = false;
+          return;
+        }
+      } catch (err) {
+        showAlert(mapAuthError(err), "error");
+        btnSubmit.disabled = false;
+      }
+    });
+
+    onAuthStateChanged(auth, (user) => {
+      if (user && !isRedirecting) {
+        isRedirecting = true;
+        window.location.replace("./main.html");
       }
     });
   </script>

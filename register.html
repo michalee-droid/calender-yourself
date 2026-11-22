@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Daftar — NOVA Schedule</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
+    :root {
+      --bg:#05060F; --surface:rgba(255,255,255,.045); --border:rgba(255,255,255,.10);
+      --text:#F4F6FF; --muted:#A7AECB; --cyan:#00E5FF; --purple:#A855F7; --red:#FB7185; --emerald:#34D399;
+    }
+    * { box-sizing:border-box; }
+    body {
+      margin:0; min-height:100vh; display:grid; place-items:center; padding:24px 16px;
+      background:
+        radial-gradient(900px 520px at 12% -10%, rgba(168,85,247,.28), transparent 60%),
+        radial-gradient(820px 520px at 88% 4%, rgba(0,229,255,.20), transparent 58%),
+        radial-gradient(700px 500px at 50% 115%, rgba(244,114,182,.12), transparent 60%),
+        var(--bg);
+      color:var(--text); font-family:'Manrope',system-ui,sans-serif;
+    }
+    h1,h2 { font-family:'Space Grotesk',system-ui,sans-serif; letter-spacing:-.02em; margin:0; }
+    .wrap { width:100%; max-width:440px; }
+    .logo {
+      width:68px; height:68px; margin:0 auto; border-radius:20px; display:grid; place-items:center;
+      font-weight:800; font-size:30px; color:#04060F;
+      background:linear-gradient(135deg,#00E5FF,#A855F7);
+      box-shadow:0 0 40px rgba(0,229,255,.38), 0 0 70px rgba(168,85,247,.25);
+    }
+    .glass {
+      margin-top:24px; background:var(--surface); border:1px solid var(--border);
+      backdrop-filter:blur(18px); border-radius:20px; padding:28px 24px;
+      box-shadow:0 18px 50px rgba(0,0,0,.35);
+    }
+    label { display:block; font-size:12px; font-weight:700; color:var(--muted); margin-bottom:6px; }
+    .field {
+      width:100%; background:rgba(3,4,12,.6); border:1px solid rgba(255,255,255,.12);
+      border-radius:12px; padding:12px 14px; color:var(--text); font:inherit; outline:none; transition:.2s;
+    }
+    .field:focus { border-color:var(--cyan); box-shadow:0 0 0 3px rgba(0,229,255,.14); }
+    .btn-primary {
+      width:100%; margin-top:18px; border:0; border-radius:12px; padding:13px 16px;
+      font-weight:800; font-size:15px; color:#04060F; cursor:pointer;
+      background:linear-gradient(90deg,#00E5FF,#A855F7);
+      box-shadow:0 12px 30px rgba(0,229,255,.22), 0 12px 30px rgba(168,85,247,.22);
+    }
+    .btn-primary:disabled { opacity:.6; cursor:not-allowed; }
+    .msg-err { margin-top:12px; font-size:13px; font-weight:700; color:var(--red); }
+    .msg-ok { margin-top:12px; font-size:13px; font-weight:700; color:var(--emerald); }
+    .footer-link { margin-top:18px; text-align:center; font-size:13px; color:var(--muted); }
+    .footer-link a { color:var(--cyan); font-weight:700; text-decoration:none; }
+    .footer-link a:hover { text-decoration:underline; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div style="text-align:center;">
+      <div class="logo">N</div>
+      <h1 style="margin-top:18px; font-size:32px;">NOVA <span style="color:var(--cyan);">Schedule</span></h1>
+      <p style="margin:6px 0 0; font-size:14px; color:var(--muted);">Daftar akun baru ke database Firebase.</p>
+    </div>
+
+    <section class="glass" aria-label="Registrasi Akun">
+      <h2 style="font-size:22px; text-align:center;">Daftar Akun</h2>
+      <p style="text-align:center; font-size:13px; color:var(--muted); margin:6px 0 20px;">
+        Tanpa password — cukup nama dan username/email unikmu.
+      </p>
+
+      <form id="registerForm" novalidate>
+        <div>
+          <label for="regName">Nama Lengkap</label>
+          <input id="regName" name="name" type="text" class="field" placeholder="Contoh: Daffa Rizaldi" required />
+        </div>
+
+        <div style="margin-top:14px;">
+          <label for="regId">Username atau Email</label>
+          <input id="regId" name="identifier" type="text" class="field" placeholder="Contoh: daffa@email.com atau daffa01" required />
+        </div>
+
+        <button id="regBtn" type="submit" class="btn-primary">DAFTAR SEKARANG</button>
+        <p id="regError" class="msg-err" role="alert" hidden></p>
+        <p id="regSuccess" class="msg-ok" role="status" hidden></p>
+      </form>
+
+      <div class="footer-link">
+        Sudah punya akun? <a href="index.html">Masuk di sini</a>
+      </div>
+    </section>
+  </div>
+
+  <script type="module">
+    import { registerUser, setActiveUser } from "./db-config.js";
+
+    const form = document.getElementById("registerForm");
+    const nameInput = document.getElementById("regName");
+    const idInput = document.getElementById("regId");
+    const btn = document.getElementById("regBtn");
+    const errEl = document.getElementById("regError");
+    const okEl = document.getElementById("regSuccess");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      errEl.hidden = true;
+      okEl.hidden = true;
+
+      const name = nameInput.value.trim();
+      const identifier = idInput.value.trim();
+
+      if (!name) {
+        errEl.textContent = "Nama lengkap wajib diisi.";
+        errEl.hidden = false;
+        nameInput.focus();
+        return;
+      }
+      if (!identifier) {
+        errEl.textContent = "Username atau email wajib diisi.";
+        errEl.hidden = false;
+        idInput.focus();
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = "MENYIMPAN...";
+      try {
+        const user = await registerUser({ name, identifier });
+        setActiveUser(user);
+        okEl.textContent = "Akun berhasil tersimpan di Firebase! Mengalihkan...";
+        okEl.hidden = false;
+        setTimeout(() => {
+          window.location.href = "main.html";
+        }, 700);
+      } catch (err) {
+        errEl.textContent = err?.message || "Gagal mendaftar ke Firebase.";
+        errEl.hidden = false;
+        btn.disabled = false;
+        btn.textContent = "DAFTAR SEKARANG";
+      }
+    });
+  </script>
+</body>
+</html>

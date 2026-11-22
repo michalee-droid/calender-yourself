@@ -166,7 +166,7 @@
       LogOut,
       Cloud,
       User
-    } from "https://esm.sh/lucide-react@0.469.0";
+    } from "https://esm.sh/lucide-react@0.469.0?deps=react@18.3.1";
 
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
     import {
@@ -186,15 +186,15 @@
     } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
 
     // =========================================================================
-    // 1. KONFIGURASI FIREBASE (Ganti dengan milikmu — sama dengan index.html)
+    // 1. KONFIGURASI FIREBASE (Sama dengan index.html)
     // =========================================================================
     const firebaseConfig = {
-  apiKey: "AIzaSyDGSSNs6k8VbdCgkTBlO82t3dB13EKL0ns",
-  authDomain: "calender-fzoooi.firebaseapp.com",
-  projectId: "calender-fzoooi",
-  storageBucket: "calender-fzoooi.firebasestorage.app",
-  messagingSenderId: "776889435651",
-  appId: "1:776889435651:web:3a1c36f67df3c33b8bf036"
+      apiKey: "AIzaSyDGSSNs6k8VbdCgkTBlO82t3dB13EKL0ns",
+      authDomain: "calender-fzoooi.firebaseapp.com",
+      projectId: "calender-fzoooi",
+      storageBucket: "calender-fzoooi.firebasestorage.app",
+      messagingSenderId: "776889435651",
+      appId: "1:776889435651:web:3a1c36f67df3c33b8bf036"
     };
 
     const app = initializeApp(firebaseConfig);
@@ -224,7 +224,9 @@
     }
 
     function formatLongDate(dateStr) {
+      if (typeof dateStr !== "string" || !dateStr.includes("-")) return "";
       const [y, m, d] = dateStr.split("-").map(Number);
+      if (!y || !m || !d) return dateStr;
       return new Intl.DateTimeFormat("id-ID", {
         day: "numeric",
         month: "long",
@@ -233,8 +235,26 @@
     }
 
     function formatShortDay(dateStr) {
+      if (typeof dateStr !== "string" || !dateStr.includes("-")) return "";
       const [y, m, d] = dateStr.split("-").map(Number);
+      if (!y || !m || !d) return dateStr;
       return new Intl.DateTimeFormat("id-ID", { weekday: "short" }).format(new Date(y, m - 1, d));
+    }
+
+    function sanitizeScheduleDoc(docId, raw = {}) {
+      const data = raw && typeof raw === "object" ? raw : {};
+      return {
+        id: String(docId || data.id || `${Date.now()}`),
+        title: typeof data.title === "string" ? data.title : "Jadwal Tanpa Judul",
+        date: typeof data.date === "string" ? data.date : toDateISO(new Date()),
+        start: typeof data.start === "string" ? data.start : "09:00",
+        end: typeof data.end === "string" ? data.end : "10:00",
+        category: CATEGORIES.includes(data.category) ? data.category : "Lainnya",
+        priority: ["Tinggi", "Sedang", "Rendah"].includes(data.priority) ? data.priority : "Sedang",
+        note: typeof data.note === "string" ? data.note : "",
+        color: typeof data.color === "string" ? data.color : "#00E5FF",
+        done: Boolean(data.done)
+      };
     }
 
     function schedulesColRef(uid) {
@@ -261,17 +281,9 @@
       for (const item of parsedList) {
         if (!item || typeof item.title !== "string" || typeof item.date !== "string") continue;
         const id = String(item.id || `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
+        const clean = sanitizeScheduleDoc(id, item);
         batch.set(doc(db, "users", uid, "schedules", id), {
-          id,
-          title: String(item.title),
-          date: String(item.date),
-          start: String(item.start || "09:00"),
-          end: String(item.end || "10:00"),
-          category: CATEGORIES.includes(item.category) ? item.category : "Lainnya",
-          priority: ["Tinggi", "Sedang", "Rendah"].includes(item.priority) ? item.priority : "Sedang",
-          note: String(item.note || ""),
-          color: String(item.color || "#00E5FF"),
-          done: Boolean(item.done),
+          ...clean,
           updatedAt: Date.now()
         });
       }
@@ -280,6 +292,42 @@
     }
 
     const h = React.createElement;
+
+    class RenderBoundary extends React.Component {
+      constructor(props) {
+        super(props);
+        this.state = { hasError: false, message: "" };
+      }
+      static getDerivedStateFromError(error) {
+        return { hasError: true, message: error?.message || "Terjadi kesalahan saat merender UI." };
+      }
+      render() {
+        if (this.state.hasError) {
+          return h(
+            "div",
+            {
+              className: "min-h-screen grid place-items-center p-6 text-center",
+              style: { background: "#05060F", color: "#F8FAFC" }
+            },
+            h("div", { className: "glass p-6 max-w-md space-y-3" }, [
+              h("h2", { key: "t", className: "text-lg font-bold text-rose-400" }, "Tampilan Gagal Dirender"),
+              h("p", { key: "m", className: "text-xs text-slate-300 break-words" }, this.state.message),
+              h(
+                "button",
+                {
+                  key: "b",
+                  type: "button",
+                  onClick: () => window.location.reload(),
+                  className: "chip active"
+                },
+                "Muat Ulang"
+              )
+            ])
+          );
+        }
+        return this.props.children;
+      }
+    }
 
     // =========================================================================
     // 3. KOMPONEN UTAMA NOVA SCHEDULE
@@ -356,7 +404,7 @@
           unsubscribeFirestore = onSnapshot(
             schedulesColRef(firebaseUser.uid),
             (snapshot) => {
-              const items = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+              const items = snapshot.docs.map((d) => sanitizeScheduleDoc(d.id, d.data()));
               setSchedules(items);
               setSyncing(false);
             },
@@ -499,7 +547,7 @@
         const id = editingId || `${Math.random().toString(36).slice(2)}${Date.now()}`;
         const existingItem = editingId ? schedules.find((s) => s.id === editingId) : null;
 
-        const payload = {
+        const payload = sanitizeScheduleDoc(id, {
           id,
           title: title.trim(),
           date,
@@ -509,12 +557,14 @@
           priority,
           note: note.trim(),
           color,
-          done: existingItem ? Boolean(existingItem.done) : false,
-          updatedAt: Date.now()
-        };
+          done: existingItem ? Boolean(existingItem.done) : false
+        });
 
         try {
-          await setDoc(doc(db, "users", user.uid, "schedules", id), payload, { merge: true });
+          await setDoc(doc(db, "users", user.uid, "schedules", id), {
+            ...payload,
+            updatedAt: Date.now()
+          });
           setToast(editingId ? "Jadwal diperbarui di cloud" : "Jadwal disimpan ke cloud");
           resetForm();
         } catch (err) {
@@ -600,23 +650,16 @@
             if (!Array.isArray(parsed)) throw new Error("format");
             const validItems = parsed
               .filter((q) => q && typeof q.title === "string" && typeof q.date === "string")
-              .map((q, idx) => ({
-                id: String(q.id || `imp-${idx}-${Date.now()}`),
-                title: String(q.title),
-                date: String(q.date),
-                start: String(q.start || "09:00"),
-                end: String(q.end || "10:00"),
-                category: CATEGORIES.includes(q.category) ? q.category : "Lainnya",
-                priority: ["Tinggi", "Sedang", "Rendah"].includes(q.priority) ? q.priority : "Sedang",
-                note: String(q.note || ""),
-                color: String(q.color || "#00E5FF"),
-                done: Boolean(q.done),
-                updatedAt: Date.now()
-              }));
+              .map((q, idx) =>
+                sanitizeScheduleDoc(String(q.id || `imp-${idx}-${Date.now()}`), q)
+              );
 
             const batch = writeBatch(db);
             for (const item of validItems) {
-              batch.set(doc(db, "users", user.uid, "schedules", item.id), item, { merge: true });
+              batch.set(doc(db, "users", user.uid, "schedules", item.id), {
+                ...item,
+                updatedAt: Date.now()
+              });
             }
             await batch.commit();
             setToast(`Impor berhasil · ${validItems.length} jadwal disinkronkan`);
@@ -675,6 +718,13 @@
         );
       }
 
+      const accountLabel =
+        typeof user?.displayName === "string" && user.displayName
+          ? user.displayName
+          : typeof user?.email === "string" && user.email
+          ? user.email
+          : "Pengguna";
+
       return h(
         "div",
         {
@@ -715,18 +765,14 @@
                         "flex items-center gap-2 rounded-full bg-white/5 border border-white/10 px-3 py-1.5 text-xs"
                     },
                     [
-                      user?.photoURL
+                      typeof user?.photoURL === "string" && user.photoURL
                         ? h("img", {
                             src: user.photoURL,
                             alt: "Avatar",
                             className: "w-5 h-5 rounded-full object-cover"
                           })
                         : h(User, { size: 14, className: "text-[var(--cyan)]" }),
-                      h(
-                        "span",
-                        { className: "font-semibold max-w-[180px] truncate" },
-                        user?.displayName || user?.email || "Pengguna"
-                      )
+                      h("span", { className: "font-semibold max-w-[180px] truncate" }, accountLabel)
                     ]
                   ),
                   h(
@@ -1657,7 +1703,7 @@
     }
 
     createRoot(document.getElementById("root")).render(
-      h(React.StrictMode, null, h(NovaScheduleApp))
+      h(React.StrictMode, null, h(RenderBoundary, null, h(NovaScheduleApp)))
     );
   </script>
 </body>
